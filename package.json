@@ -1,0 +1,15 @@
+{
+  "name": "playhive",
+  "version": "1.0.0",
+  "description": "A backend for a youtube like web app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "backend"
+  ],
+  "author": "Hamdan Raza",
+  "license": "ISC"
+}
