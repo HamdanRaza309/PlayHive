@@ -1,5 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs';
+import fs from 'fs/promises'; // Use fs/promises for Promise-based methods
+import dotenv from 'dotenv';
+dotenv.config();
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,23 +13,27 @@ const uploadFileOnCloudinary = async (localFilePath) => {
     if (!localFilePath) return null;
 
     try {
-
-        // Upload file on cloudinary
+        // Upload file to Cloudinary
         const res = await cloudinary.uploader.upload(localFilePath, {
             resource_type: 'auto',
         });
 
-        // File taken from LocalStorage and uploaded successfully to Cloudinary
+        // Log success and return response
         console.log('File uploaded successfully to Cloudinary:', res.url);
         return res;
     } catch (error) {
+        console.error('Cloudinary upload error:', error);
 
-        // remove the locally saved temporary file as the upload operation got failed
-        await fs.unlink(localFilePath);
-        console.log('File upload failed and local file removed from local storage.');
+        // Remove the temporary local file
+        try {
+            await fs.unlink(localFilePath);
+            console.log('Local temporary file removed successfully.');
+        } catch (unlinkError) {
+            console.error('Error removing local temporary file:', unlinkError);
+        }
 
         return null;
     }
 };
 
-export { uploadFileOnCloudinary }
+export { uploadFileOnCloudinary };

@@ -3,11 +3,13 @@
 // })
 
 import dotenv from 'dotenv'
+// Load environment variables
+dotenv.config();
+
 import connectDB from './db/db.js';
 import { app } from './app.js';
 
-// Load environment variables
-dotenv.config()
+
 
 // Set default port
 const port = process.env.PORT || 8000;
