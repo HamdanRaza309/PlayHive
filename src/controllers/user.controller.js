@@ -93,14 +93,18 @@ const loginUser = asyncHandler(async (req, res) => {
     // send cookie in response
 
     const { username, email, password } = req.body;
+    console.log('req.body', req.body);
+    console.log(req.headers['content-type']);
 
-    if (!username || !email) {
+
+    if (!username && !email) {
         throw new ApiError(400, "Username or email is required")
     }
 
     const user = await User.findOne({
         $or: [{ username }, { email }]
     })
+    // console.log('password', password);
 
     if (!user) {
         throw new ApiError(404, 'User does not exist')

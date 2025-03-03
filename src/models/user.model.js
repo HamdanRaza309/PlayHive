@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -59,11 +60,10 @@ userSchema.pre('save', async function (next) {
 
 // Compare the provided password with the stored hashed password
 userSchema.methods.isPasswordCorrect = async function (password) {
-    try {
-        return await bcrypt.compare(password, this.password);
-    } catch (err) {
-        throw new Error('Password comparison failed');
-    }
+    console.log('password', password);
+    console.log('this.password', this.password);
+
+    return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = async function () {
