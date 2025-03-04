@@ -7,9 +7,11 @@ import { uploadFileOnCloudinary } from '../utils/cloudinary.js'
 // Generating access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
-        const user = await User.findOne(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        const user = await User.findById(userId)
+
+        // Await the token generation
+        const accessToken = await user.generateAccessToken();
+        const refreshToken = await user.generateRefreshToken();
 
         user.refreshToken = refreshToken
         await user.save({ validateBeforeSave: false })
