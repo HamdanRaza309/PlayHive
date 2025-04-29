@@ -207,4 +207,80 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 })
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken }
+const getUserProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params
+
+    if (!username.trim()) {
+        throw new ApiError(400, 'Username is missing')
+    }
+
+    // finding the count of subscribers of the channel(user) and the count of the channels this user(channel) has subscribed to.
+    const channel = await User.aggregate([
+        {
+            // finding the user with the given username
+            $match: {
+                username: username.toLowerCase()
+            }
+        },
+        {
+            // finding subscribers of this channel
+            $lookup: {
+                from: 'subscriptions',
+                localField: '_id',
+                foreignField: 'channel',
+                as: 'subscribers'
+            }
+        },
+        {
+            // finding the count of channels this user has subscribed to
+            $lookup: {
+                from: 'subscriptions',
+                localField: '_id',
+                foreignField: 'subscriber',
+                as: 'subscribedTo'
+            }
+        },
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: '$subscribers'
+                },
+                channelsSubscribedToCount: {
+                    $size: '$subscribedTo'
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [req.user._id, '$subscribers.subscriber'] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            // the fields that you want to send to the frontend
+            $project: {
+                fullname: 1,
+                username: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                avatar: 1,
+                coverImage: 1,
+                isSubscribed: 1,
+                email: 1
+            }
+        }
+    ])
+
+    if (!channel?.length) {
+        throw new ApiError(404, 'Channel does not exists')
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, channel[0], 'User Profile fetched successfully')
+        )
+})
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken, getUserProfile }
