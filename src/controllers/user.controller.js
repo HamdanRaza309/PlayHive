@@ -4,6 +4,7 @@ import { User } from '../models/user.model.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import { uploadFileOnCloudinary } from '../utils/cloudinary.js'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 
 // Generating access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -26,7 +27,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 const registerUser = asyncHandler(async (req, res) => {
     const { fullname, username, email, password } = req.body
-    // console.log(email, password, username, fullname);
+    console.log(email, password, username, fullname);
 
     // throws error if any field is empty
     if (
@@ -45,7 +46,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with same email or username already exists.");
     }
 
-    // console.log(req.files);
+    console.log(req.files);
 
     const avatarLocalPath = req.files?.avatar[0]?.path;
 
@@ -96,8 +97,8 @@ const loginUser = asyncHandler(async (req, res) => {
     // send cookie in response
 
     const { username, email, password } = req.body;
-    console.log('req.body', req.body);
-    console.log(req.headers['content-type']);
+    // console.log('req.body', req.body);
+    // console.log(req.headers['content-type']);
 
 
     if (!username && !email) {
@@ -146,8 +147,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 // deletes the field from the mongodb document
             }
         },
         {
@@ -189,7 +190,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, 'Invalid Refresh Token or used')
         }
 
-        const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id)
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
         const options = {
             httpOnly: true,
@@ -199,11 +200,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         return res
             .status(200)
             .cookie('accessToken', accessToken, options)
-            .cookie('refreshToken', newRefreshToken, options)
+            .cookie('refreshToken', refreshToken, options)
             .json(
                 new ApiResponse(
                     200,
-                    { accessToken, refreshToken: newRefreshToken },
+                    { accessToken, refreshToken },
                     'Access Token refreshed successfully'
                 )
             )
@@ -213,14 +214,20 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 })
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
+
     const { oldPassword, newPassword } = req.body;
+    console.log(req.body);
+
+
     const user = await User.findById(req.user?._id) // req.user?.id
+    console.log(req.user?._id);
 
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
         throw new ApiError(400, 'Invalid Password')
     }
+    console.log(isPasswordCorrect);
 
     user.password = newPassword
     await user.save({ validateBeforeSave: false })
@@ -334,6 +341,9 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
     const { username } = req.params
+
+    console.log(username);
+
 
     if (!username?.trim()) {
         throw new ApiError(400, "username is missing")

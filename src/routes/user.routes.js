@@ -43,6 +43,6 @@ router.route('/coverImage').patch(
     updateUserCoverImage
 )
 router.route('/c/:username').get(verifyJWT, getUserChannelProfile)
-router.router('/history').get(verifyJWT, getWatchHistory)
+router.route('/history').get(verifyJWT, getWatchHistory)
 
 export default router 
