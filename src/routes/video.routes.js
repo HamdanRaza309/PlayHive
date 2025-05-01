@@ -14,7 +14,7 @@ const router = Router();
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
 router.route("/").get(getAllVideos)
-router.route("/").post(
+router.route("/pulish").post(
     upload.fields([
         {
             name: "videoFile",

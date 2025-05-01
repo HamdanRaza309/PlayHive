@@ -147,15 +147,80 @@ const updateVideo = asyncHandler(async (req, res) => {
     );
 });
 
-
+//TODO: delete video
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: delete video
-})
+    const { videoId } = req.params;
+
+    if (!videoId) {
+        throw new ApiError(400, "Video ID is required");
+    }
+
+    const video = await Video.findById(videoId);
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    // Optional: Delete the associated video and thumbnail from Cloudinary
+    if (video.videoFile) {
+        const videoPublicId = extractPublicId(video.videoFile);
+        if (videoPublicId) {
+            await cloudinary.uploader.destroy(videoPublicId, { resource_type: 'video' });
+        }
+    }
+
+    if (video.thumbnail) {
+        const thumbnailPublicId = extractPublicId(video.thumbnail);
+        if (thumbnailPublicId) {
+            await cloudinary.uploader.destroy(thumbnailPublicId, { resource_type: 'image' });
+        }
+    }
+
+    const isVideoDeleted = await Video.findByIdAndDelete(videoId);
+
+    if (!isVideoDeleted) {
+        throw new ApiError(500, "Failed to delete the video");
+    }
+
+    // Optional: Update or delete the video references in user watch history
+    await User.updateMany(
+        { watchHistory: videoId }, // Find users who have this video in their watch history
+        { $pull: { watchHistory: videoId } } // Remove the video from their watch history
+    );
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, {}, "Video deleted successfully")
+        );
+});
+
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-})
+
+    if (!videoId) {
+        throw new ApiError(400, 'Video ID is required');
+    }
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, 'Video not found');
+    }
+
+    // Toggle the isPublished status
+    video.isPublished = !video.isPublished;
+
+    await video.save();
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, video, `Video publish status has been ${video.isPublished ? 'published' : 'unpublished'}`)
+        );
+});
+
 
 export {
     getAllVideos,
