@@ -25,10 +25,27 @@ export const extractPublicId = (url) => {
     }
 };
 
+//TODO: get all videos based on query, sort, pagination
+// const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
-})
+
+    const { userId } = req.params;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const videos = await Video.find({ owner: userId }).populate('owner', 'username fullname');
+
+    if (!videos || videos.length === 0) {
+        throw new ApiError(404, "No videos found for this user");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, videos, "Videos fetched successfully"));
+});
+
 
 // TODO: get video, upload to cloudinary, create video
 const publishAVideo = asyncHandler(async (req, res) => {
