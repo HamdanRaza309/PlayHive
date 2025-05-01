@@ -81,14 +81,74 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
-    const { playlistId, videoId } = req.params
-})
+    const { playlistId, videoId } = req.params;
+
+    if (!playlistId || !videoId) {
+        throw new ApiError(400, "Playlist ID and Video ID are required");
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(playlistId) || !mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new ApiError(400, "Invalid Playlist ID or Video ID");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    const objectVideoId = new mongoose.Types.ObjectId(videoId);
+
+    // Prevent duplicate videos
+    const isAlreadyAdded = playlist.videos.some(id => id.equals(objectVideoId));
+    if (isAlreadyAdded) {
+        return res.status(200).json(
+            new ApiResponse(200, playlist, "Video is already in playlist")
+        );
+    }
+
+    playlist.videos.push(objectVideoId);
+    await playlist.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, playlist, "Video added to playlist")
+    );
+});
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
-    const { playlistId, videoId } = req.params
-    // TODO: remove video from playlist
+    const { playlistId, videoId } = req.params;
 
-})
+    if (!playlistId || !videoId) {
+        throw new ApiError(400, "Playlist ID and Video ID are required");
+    }
+
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    // Convert the videoId to an ObjectId if it's not already
+    const objectVideoId = new mongoose.Types.ObjectId(videoId);
+
+    // Check if the video is already in the playlist
+    const videoIndex = playlist.videos.indexOf(objectVideoId);
+
+    if (videoIndex !== -1) {
+        // If the video exists in the playlist, remove it
+        // .splice(startDeletingFromThisIndex, removeThisNumberOfElements)
+        playlist.videos.splice(videoIndex, 1);
+        await playlist.save();
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, playlist, "Video removed from playlist"));
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, playlist, "Video is not available in the playlist"));
+});
 
 const deletePlaylist = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
