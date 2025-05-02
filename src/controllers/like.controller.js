@@ -102,7 +102,28 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 //TODO: get all liked videos by logged-in user
 const getLikedVideos = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
 
+    if (!userId) {
+        throw new ApiError(401, 'User not authenticated');
+    }
+
+    // Find all likes for videos by the user
+    const likedVideoEntries = await Like.find({ likedBy: userId, video: { $exists: true } });
+
+    if (!likedVideoEntries || likedVideoEntries.length === 0) {
+        return res.status(200).json(new ApiResponse(200, [], "No liked videos found"));
+    }
+
+    // Extract video IDs from the Like entries
+    const likedVideoIds = likedVideoEntries.map(entry => entry.video);
+
+    // Fetch the actual videos
+    const likedVideos = await Video.find({ _id: { $in: likedVideoIds } });
+
+    return res.status(200).json(
+        new ApiResponse(200, likedVideos, 'Liked videos retrieved successfully')
+    );
 });
 
 export {
